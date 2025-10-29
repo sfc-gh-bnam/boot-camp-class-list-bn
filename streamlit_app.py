@@ -6,7 +6,7 @@ import numpy as np
 
 # Page configuration
 st.set_page_config(
-    page_title="Brandon - Report Dashboard TEST 3",
+    page_title="Brandon - Report Dashboard TEST 2",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -17,12 +17,29 @@ st.set_page_config(
 def load_data():
     # Sample sales data
     dates = pd.date_range(start='2020-01-01', end='2024-12-31', freq='D')
+    
+    # Region mapping to coordinates (major US cities)
+    region_coords = {
+        'North': {'lat': 40.7128, 'lon': -74.0060, 'city': 'New York'},
+        'South': {'lat': 33.7490, 'lon': -84.3880, 'city': 'Atlanta'},
+        'East': {'lat': 42.3601, 'lon': -71.0589, 'city': 'Boston'},
+        'West': {'lat': 34.0522, 'lon': -118.2437, 'city': 'Los Angeles'}
+    }
+    
+    regions = np.random.choice(['North', 'South', 'East', 'West'], len(dates))
+    
     sales_data = pd.DataFrame({
         'Date': dates,
         'Sales': np.random.randint(1000, 5000, len(dates)),
-        'Region': np.random.choice(['North', 'South', 'East', 'West'], len(dates)),
+        'Region': regions,
         'Product': np.random.choice(['Product A', 'Product B', 'Product C'], len(dates))
     })
+    
+    # Add geographic coordinates
+    sales_data['lat'] = sales_data['Region'].map(lambda x: region_coords[x]['lat'])
+    sales_data['lon'] = sales_data['Region'].map(lambda x: region_coords[x]['lon'])
+    sales_data['City'] = sales_data['Region'].map(lambda x: region_coords[x]['city'])
+    
     return sales_data
 
 # Load data
@@ -94,6 +111,32 @@ with col2:
     )
     fig_pie.update_layout(height=400)
     st.plotly_chart(fig_pie, use_container_width=True)
+
+st.markdown("---")
+
+# Geographic Chart
+st.subheader("Sales by Geographic Location")
+geo_data = df.groupby(['City', 'Region', 'lat', 'lon'])['Sales'].sum().reset_index()
+
+fig_geo = px.scatter_geo(
+    geo_data,
+    lat='lat',
+    lon='lon',
+    size='Sales',
+    hover_name='City',
+    hover_data={'Region': True, 'Sales': ':,', 'lat': False, 'lon': False},
+    title='Sales Distribution by Geographic Location',
+    color='Sales',
+    color_continuous_scale='Viridis',
+    projection='natural earth',
+    size_max=50
+)
+fig_geo.update_layout(height=500, geo=dict(
+    scope='usa',
+    center=dict(lat=39.8283, lon=-98.5795),
+    projection_scale=3
+))
+st.plotly_chart(fig_geo, use_container_width=True)
 
 st.markdown("---")
 
