@@ -46,7 +46,7 @@ def load_data():
 df = load_data()
 
 # Title
-st.title("📊 Brandon - Report Dashboard")
+st.title("📊 Brandon - Report Dashboard TEST 2")
 st.markdown("---")
 
 # Key Metrics
@@ -116,26 +116,41 @@ st.markdown("---")
 
 # Geographic Chart
 st.subheader("Sales by Geographic Location")
-geo_data = df.groupby(['City', 'Region', 'lat', 'lon'])['Sales'].sum().reset_index()
+geo_data = df.groupby(['City', 'Region', 'lat', 'lon'])['Sales'].sum().reset_index().sort_values('Sales', ascending=False)
 
 fig_geo = px.scatter_geo(
     geo_data,
     lat='lat',
     lon='lon',
     size='Sales',
+    text='City',
     hover_name='City',
     hover_data={'Region': True, 'Sales': ':,', 'lat': False, 'lon': False},
     title='Sales Distribution by Geographic Location',
     color='Sales',
     color_continuous_scale='Viridis',
-    projection='natural earth',
+    projection='orthographic',
     size_max=50
 )
-fig_geo.update_layout(height=500, geo=dict(
-    scope='usa',
-    center=dict(lat=39.8283, lon=-98.5795),
-    projection_scale=3
-))
+fig_geo.update_traces(
+    textposition='top center',
+    textfont=dict(size=12, color='black')
+)
+fig_geo.update_layout(
+    height=600,
+    geo=dict(
+        projection_type='orthographic',
+        showland=True,
+        landcolor='rgb(243, 243, 243)',
+        countrycolor='rgb(204, 204, 204)',
+        showocean=True,
+        oceancolor='rgb(230, 245, 255)',
+        showcountries=True,
+        showlakes=True,
+        lakecolor='rgb(230, 245, 255)',
+        showframe=False
+    )
+)
 st.plotly_chart(fig_geo, use_container_width=True)
 
 st.markdown("---")
