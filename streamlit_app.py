@@ -6,7 +6,7 @@ import numpy as np
 
 # Page configuration
 st.set_page_config(
-    page_title="Brandon - Report Dashboard",
+    page_title="Brandon - Report Dashboard TEST",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
