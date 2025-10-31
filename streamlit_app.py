@@ -12,20 +12,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Region mapping to coordinates (major US cities)
+REGION_COORDS = {
+    'North': {'lat': 40.7128, 'lon': -74.0060, 'city': 'New York'},
+    'South': {'lat': 33.7490, 'lon': -84.3880, 'city': 'Atlanta'},
+    'East': {'lat': 42.3601, 'lon': -71.0589, 'city': 'Boston'},
+    'West': {'lat': 34.0522, 'lon': -118.2437, 'city': 'Los Angeles'}
+}
+
 # Generate sample data
 @st.cache_data
-def load_data():
+def load_sample_data():
     # Sample sales data
     dates = pd.date_range(start='2020-01-01', end='2024-12-31', freq='D')
-    
-    # Region mapping to coordinates (major US cities)
-    region_coords = {
-        'North': {'lat': 40.7128, 'lon': -74.0060, 'city': 'New York'},
-        'South': {'lat': 33.7490, 'lon': -84.3880, 'city': 'Atlanta'},
-        'East': {'lat': 42.3601, 'lon': -71.0589, 'city': 'Boston'},
-        'West': {'lat': 34.0522, 'lon': -118.2437, 'city': 'Los Angeles'}
-    }
-    
     regions = np.random.choice(['North', 'South', 'East', 'West'], len(dates))
     
     sales_data = pd.DataFrame({
@@ -36,17 +35,67 @@ def load_data():
     })
     
     # Add geographic coordinates
-    sales_data['lat'] = sales_data['Region'].map(lambda x: region_coords[x]['lat'])
-    sales_data['lon'] = sales_data['Region'].map(lambda x: region_coords[x]['lon'])
-    sales_data['City'] = sales_data['Region'].map(lambda x: region_coords[x]['city'])
+    sales_data['lat'] = sales_data['Region'].map(lambda x: REGION_COORDS[x]['lat'])
+    sales_data['lon'] = sales_data['Region'].map(lambda x: REGION_COORDS[x]['lon'])
+    sales_data['City'] = sales_data['Region'].map(lambda x: REGION_COORDS[x]['city'])
     
     return sales_data
 
+def process_uploaded_file(uploaded_file):
+    """Process uploaded Excel or CSV file and add geographic coordinates if needed"""
+    try:
+        # Determine file type and read accordingly
+        file_extension = uploaded_file.name.split('.')[-1].lower()
+        
+        if file_extension in ['xlsx', 'xls']:
+            # Read Excel file
+            df = pd.read_excel(uploaded_file)
+        elif file_extension == 'csv':
+            # Read CSV file
+            df = pd.read_csv(uploaded_file)
+        else:
+            return None, f"Unsupported file type: {file_extension}. Please use .xlsx, .xls, or .csv"
+        
+        # Ensure Date column is datetime
+        if 'Date' in df.columns:
+            df['Date'] = pd.to_datetime(df['Date'])
+        
+        # Add geographic coordinates if not present
+        if 'lat' not in df.columns and 'Region' in df.columns:
+            df['lat'] = df['Region'].map(lambda x: REGION_COORDS.get(x, {}).get('lat', 0))
+            df['lon'] = df['Region'].map(lambda x: REGION_COORDS.get(x, {}).get('lon', 0))
+            df['City'] = df['Region'].map(lambda x: REGION_COORDS.get(x, {}).get('city', 'Unknown'))
+        elif 'City' not in df.columns and 'lat' in df.columns and 'lon' in df.columns:
+            # If coordinates exist but no City, try to match or set Unknown
+            df['City'] = 'Unknown'
+        
+        return df, None
+    except Exception as e:
+        return None, str(e)
+
+# Sidebar - File Upload
+st.sidebar.header("Data Source")
+uploaded_file = st.sidebar.file_uploader(
+    "Upload File",
+    type=['xlsx', 'xls', 'csv'],
+    help="Upload an Excel (.xlsx, .xls) or CSV file with columns: Date, Sales, Region, Product (optional: City, lat, lon)"
+)
+
 # Load data
-df = load_data()
+if uploaded_file is not None:
+    df, error = process_uploaded_file(uploaded_file)
+    if error:
+        st.sidebar.error(f"Error loading file: {error}")
+        st.sidebar.info("Using sample data instead")
+        df = load_sample_data()
+    else:
+        st.sidebar.success(f"✓ File loaded: {uploaded_file.name}")
+        st.sidebar.info(f"Rows: {len(df)}")
+else:
+    df = load_sample_data()
 
 # Title
-st.title("📊 Brandon - Report Dashboard TEST 2")
+st.title("📊 Brandon - Report Dashboard")
 st.markdown("---")
 
 # Key Metrics
